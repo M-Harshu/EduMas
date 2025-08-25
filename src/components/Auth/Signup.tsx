@@ -19,6 +19,7 @@ const Signup: React.FC = () => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match");
       return;
     }
 
@@ -33,9 +34,9 @@ const Signup: React.FC = () => {
 
       // ✅ Redirect based on role
       if (formData.role === "student") {
-        navigate("/studentdashboard");
+        navigate("/studentdashboard", { replace: true });
       } else if (formData.role === "mentor") {
-        navigate("/mentordashboard");
+        navigate("/mentordashboard", { replace: true });
       }
     } catch (error) {
       console.error("Failed to create account:", error);

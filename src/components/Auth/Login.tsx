@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, BookOpen } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,16 +10,30 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login, currentUser } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // ✅ Dummy redirect to student dashboard
-    setTimeout(() => {
-      navigate('/dashboard', { replace: true });
+    try {
+      await login(email, password);
+
+      // ✅ Redirect based on role
+      if (currentUser && currentUser.role) {
+        if (currentUser.role === 'student') {
+          navigate('/studentdashboard', { replace: true });
+        } else if (currentUser.role === 'mentor') {
+          navigate('/mentordashboard', { replace: true });
+        }
+      } else {
+        navigate('/studentdashboard', { replace: true });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
-    }, 500); // small delay for UX
+    }
   };
 
   return (

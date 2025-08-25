@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         certificates: []
       });
 
-      setCurrentUser({ uid: user.uid, email: user.email!, name, role });
+      setCurrentUser({ uid: user.uid, email: user.email!, name, role, enrolledCourses: [], completedCourses: [], certificates: [] });
       toast.success('Account created successfully!');
     } catch (error: any) {
       toast.error(error.message);
@@ -61,14 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, 'users', user.uid));
-if (userDoc.exists()) {
-  const data = userDoc.data() as Omit<User, 'uid' | 'email'>;
-  setCurrentUser({
-    uid: user.uid,
-    email: user.email!,
-    ...data,
-  });
-}
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data && 'role' in data) {
+          setCurrentUser({
+            uid: user.uid,
+            email: user.email!,
+            name: data.name,
+            role: data.role as 'student' | 'mentor',
+            enrolledCourses: data.enrolledCourses ?? [],
+            completedCourses: data.completedCourses ?? [],
+            certificates: data.certificates ?? []
+          });
+        }
+      }
 
       toast.success('Logged in successfully!');
     } catch (error: any) {
@@ -93,11 +100,18 @@ if (userDoc.exists()) {
       if (user) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          setCurrentUser({
-            uid: user.uid,
-            email: user.email!,
-            ...userDoc.data()
-          } as User);
+          const data = userDoc.data();
+          if (data && 'role' in data) {
+            setCurrentUser({
+              uid: user.uid,
+              email: user.email!,
+              name: data.name,
+              role: data.role as 'student' | 'mentor',
+              enrolledCourses: data.enrolledCourses ?? [],
+              completedCourses: data.completedCourses ?? [],
+              certificates: data.certificates ?? []
+            });
+          }
         }
       } else {
         setCurrentUser(null);
