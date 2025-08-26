@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
 
 const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -8,14 +7,13 @@ const Signup: React.FC = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student" as "student" | "mentor",
+    role: "student", // 👈 added role here
   });
 
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -23,26 +21,17 @@ const Signup: React.FC = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      await signup(
-        formData.email,
-        formData.password,
-        formData.name,
-        formData.role
-      );
+    setLoading(true);
 
-      // ✅ Redirect based on role
+    // ✅ Redirect based on role
+    setTimeout(() => {
       if (formData.role === "student") {
-        navigate("/studentdashboard", { replace: true });
-      } else if (formData.role === "mentor") {
-        navigate("/mentordashboard", { replace: true });
+        navigate("/student-dashboard", { replace: true });
+      } else {
+        navigate("/mentor-dashboard", { replace: true });
       }
-    } catch (error) {
-      console.error("Failed to create account:", error);
-    } finally {
       setLoading(false);
-    }
+    }, 500); // small delay for UX
   };
 
   return (
@@ -94,14 +83,11 @@ const Signup: React.FC = () => {
             required
           />
 
-          {/* Role Dropdown */}
+          {/* Role dropdown */}
           <select
             value={formData.role}
             onChange={(e) =>
-              setFormData({
-                ...formData,
-                role: e.target.value as "student" | "mentor",
-              })
+              setFormData({ ...formData, role: e.target.value })
             }
             className="border p-2 rounded w-full"
           >
