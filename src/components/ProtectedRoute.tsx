@@ -8,14 +8,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>; // while Firebase checks session
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
   if (requiredRole && currentUser.role !== requiredRole) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={`/${currentUser.role}-dashboard`} replace />;
   }
 
   return <>{children}</>;
