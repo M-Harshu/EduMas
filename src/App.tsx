@@ -2,10 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "./contexts/ThemeContext";
-// import { useAuth } from "./contexts/AuthContext";
-import CreateCourse from "./pages/CreateCourse";
-import ProtectedRoute from "./components/ProtectedRoute";
-
+// import StudyMaterial from "./pages/StudyMaterial";
 
 // Layout Components
 import Navbar from "./components/Layout/Navbar";
@@ -18,6 +15,7 @@ import Signup from "./components/Auth/Signup";
 // Dashboard Components
 import StudentDashboard from "./components/Dashboard/StudentDashboard";
 import MentorDashboard from "./components/Dashboard/MentorDashboard";
+import StudentWorkshop from "./components/Dashboard/StudentWorkshop";
 
 // Home Components
 import Hero from "./components/Home/Hero";
@@ -29,6 +27,8 @@ import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
 import Community from "./pages/Community";
+import CreateCourse from "./pages/CreateCourse"; // moved to pages folder, no duplicate
+import StudyMaterial from "./pages/StudyMaterial";
 
 // ✅ Home page layout
 const Home: React.FC = () => (
@@ -56,6 +56,7 @@ const AppContent: React.FC = () => {
           {/* Dashboards */}
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/mentor-dashboard" element={<MentorDashboard />} />
+          <Route path="/student-dashboard/workshops" element={<StudentWorkshop />} />
 
           {/* Pages */}
           <Route path="/courses" element={<Courses />} />
@@ -63,8 +64,7 @@ const AppContent: React.FC = () => {
           <Route path="/about" element={<About />} />
           <Route path="/community" element={<Community />} />
           <Route path="/create-course" element={<CreateCourse />} />
-
-
+          <Route path="/study-material" element={<StudyMaterial />} />
 
           {/* Fallback → Redirects to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

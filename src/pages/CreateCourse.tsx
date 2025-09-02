@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Save } from "lucide-react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../config/firebase"; // adjust if needed
 
 const CreateCourse: React.FC = () => {
   const navigate = useNavigate();
@@ -28,15 +30,18 @@ const CreateCourse: React.FC = () => {
     setSaving(true);
 
     try {
-      // TODO: save to Firestore here if/when you’re ready
-      // For now just simulate success and go back to mentor dashboard
-      setTimeout(() => {
-        setSaving(false);
-        navigate("/mentor-dashboard");
-      }, 500);
+      // Save to Firestore
+      await addDoc(collection(db, "courses"), {
+        ...form,
+        createdAt: serverTimestamp(),
+        mentorId: "dummyMentor", // can replace with currentUser?.uid if auth added
+      });
+
+      setSaving(false);
+      navigate("/mentor-dashboard");
     } catch (err) {
       setSaving(false);
-      console.error(err);
+      console.error("Error creating course:", err);
     }
   };
 

@@ -2,6 +2,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore";
+import { db } from "../../config/firebase";
 // import { Button } from "../ui/button";
 import {
   Users,
@@ -23,7 +25,7 @@ type Stat = {
 };
 
 type Course = {
-  id: number;
+  id: string;
   title: string;
   students: number;
   rating: number;
@@ -49,48 +51,53 @@ const MentorDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const stats: Stat[] = [
-    { icon: Users, label: "Total Students", value: "342", color: "from-blue-500 to-blue-600" },
-    { icon: BookOpen, label: "Courses Created", value: "12", color: "from-green-500 to-green-600" },
+    { icon: Users, label: "Total Students", value: "29", color: "from-blue-500 to-blue-600" },
+    { icon: BookOpen, label: "Courses Created", value: "18", color: "from-green-500 to-green-600" },
     { icon: TrendingUp, label: "Avg. Rating", value: "4.8", color: "from-yellow-500 to-yellow-600" },
     { icon: DollarSign, label: "Monthly Earnings", value: "$3,240", color: "from-purple-500 to-purple-600" },
   ];
 
-  const courses: Course[] = [
-    {
-      id: 1,
-      title: "React Fundamentals",
-      students: 89,
-      rating: 4.9,
-      revenue: "$1,245",
-      status: "published",
-      image: "https://images.pexels.com/photos/2653362/pexels-photo-2653362.jpeg",
-    },
-    {
-      id: 2,
-      title: "Advanced JavaScript Patterns",
-      students: 124,
-      rating: 4.7,
-      revenue: "$1,890",
-      status: "published",
-      image: "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg",
-    },
-    {
-      id: 3,
-      title: "Node.js Backend Development",
-      students: 67,
-      rating: 4.8,
-      revenue: "$780",
-      status: "draft",
-      image: "https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg",
-    },
-  ];
+  const [courses, setCourses] = React.useState<Course[]>([]);
 
-  const recentActivity: Activity[] = [
-    { type: "enrollment", message: "New student enrolled in React Fundamentals", time: "2 hours ago" },
-    { type: "review", message: "Sarah left a 5-star review on Advanced JavaScript", time: "4 hours ago" },
-    { type: "question", message: "Mike asked a question in Node.js course", time: "6 hours ago" },
-    { type: "completion", message: "15 students completed React Fundamentals", time: "1 day ago" },
-  ];
+React.useEffect(() => {
+  // Filter courses by mentorId
+  const q = query(
+    collection(db, "courses"),
+    where("mentorId", "==", "dummyMentor"), // Replace "dummyMentor" with currentUser.uid if you add auth
+    orderBy("createdAt", "desc")
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const fetchedCourses = snapshot.docs.map((doc) => ({
+      id: doc.id, // Keep as string (Firestore ID)
+      title: doc.data().title,
+      students: doc.data().students || 0,
+      rating: doc.data().rating || 0,
+      revenue: doc.data().revenue || "$0",
+      status: doc.data().status || "draft",
+      image: doc.data().image || "https://via.placeholder.com/150",
+    })) as Course[];
+setCourses(fetchedCourses);
+snapshot.docChanges().forEach((change) => {
+  if (change.type === "added") {
+    const newCourse = change.doc.data();
+    const newActivity: Activity = {
+      type: "course_added",
+      message: `You added a new course: ${newCourse.title}`,
+      time: "Just now",
+    };
+    setRecentActivity((prev) => [newActivity, ...prev]);
+  }
+});
+
+  });
+
+  return () => unsubscribe();
+}, []);
+
+
+
+const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
 
   const upcomingEvents: EventItem[] = [
     { title: "React Workshop", date: "March 15", time: "2:00 PM", type: "workshop" },
@@ -293,4 +300,4 @@ const MentorDashboard: React.FC = () => {
   );
 };
 
-export default MentorDashboard;
+export default MentorDashboard; 

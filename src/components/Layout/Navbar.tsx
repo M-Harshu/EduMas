@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+// src/components/Navbar/Navbar.tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,11 +22,24 @@ const Navbar: React.FC = () => {
   const { darkMode, toggleDarkMode } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
+  const [hideAuthButtons, setHideAuthButtons] = useState(false);
+
+  const location = useLocation();
+
+  // Hide Login/SignUp on all pages except login/signup
+  useEffect(() => {
+    if (location.pathname === '/' || location.pathname === '/signup' || location.pathname === '/login') {
+      setHideAuthButtons(false);
+    } else {
+      setHideAuthButtons(true);
+    } 
+  }, [location]);
 
   const handleLogout = async () => {
     try {
       await logout();
       setProfileDropdown(false);
+      setHideAuthButtons(false); // show buttons again after logout
     } catch (error) {
       console.error('Failed to logout:', error);
     }
@@ -35,7 +49,7 @@ const Navbar: React.FC = () => {
     { name: 'Dashboard', path: '/dashboard', icon: GraduationCap },
     { name: 'Courses', path: '/courses', icon: BookOpen },
     { name: 'Community', path: '/community', icon: Users },
-    { name: 'Mentor', path: '/mentor-dashboard', icon: User } // Mentor link
+    ...(currentUser.role === 'mentor' ? [{ name: 'Mentor', path: '/mentor-dashboard', icon: User }] : [])
   ] : [
     { name: 'Home', path: '/', icon: BookOpen },
     { name: 'Courses', path: '/courses', icon: BookOpen },
@@ -86,7 +100,7 @@ const Navbar: React.FC = () => {
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </motion.button>
 
-            {currentUser ? (
+            {currentUser && (
               <div className="relative">
                 {/* Profile button */}
                 <motion.button
@@ -122,15 +136,16 @@ const Navbar: React.FC = () => {
                           <Settings className="h-4 w-4 mr-2" />
                           Profile Settings
                         </Link>
-                        {/* Mentor link in dropdown */}
-                        <Link
-                          to="/mentor-dashboard"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          onClick={() => setProfileDropdown(false)}
-                        >
-                          <User className="h-4 w-4 mr-2" />
-                          Mentor Dashboard
-                        </Link>
+                        {currentUser.role === 'mentor' && (
+                          <Link
+                            to="/mentor-dashboard"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => setProfileDropdown(false)}
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            Mentor Dashboard
+                          </Link>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -143,7 +158,10 @@ const Navbar: React.FC = () => {
                   )}
                 </AnimatePresence>
               </div>
-            ) : (
+            )}
+
+            {/* Desktop Login/SignUp */}
+            {!hideAuthButtons && (
               <div className="hidden md:flex space-x-2">
                 <Link
                   to="/login"
@@ -192,23 +210,11 @@ const Navbar: React.FC = () => {
                   </Link>
                 ))}
 
-                {!currentUser && (
+                {!hideAuthButtons && (
                   <div className="px-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <div className="space-y-2">
-                      <Link
-                        to="/login"
-                        className="block w-full px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        to="/signup"
-                        className="block w-full px-4 py-2 text-center text-sm font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Sign Up
-                      </Link>
+                      <Link to="/login">Login</Link>
+                      <Link to="/signup">Sign Up</Link>
                     </div>
                   </div>
                 )}

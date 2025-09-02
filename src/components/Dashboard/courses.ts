@@ -5,25 +5,27 @@ export interface Course {
   totalLessons: number;
   image: string;
   nextLesson: string;
+  isPremium: boolean; // new field
+  price?: number;      // optional, only for premium courses
 }
 
 export const allCourses: Course[] = [
-  { id: 1, title: "Web Development Bootcamp", instructor: "John Doe", totalLessons: 15, image: "", nextLesson: "HTML Basics" },
-  { id: 2, title: "Data Science with Python", instructor: "Jane Smith", totalLessons: 12, image: "", nextLesson: "Python Basics" },
-  { id: 3, title: "AI & Machine Learning", instructor: "Alice Brown", totalLessons: 14, image: "", nextLesson: "Intro to ML" },
-  { id: 4, title: "Cloud Computing Fundamentals", instructor: "Bob Martin", totalLessons: 10, image: "", nextLesson: "Cloud Basics" },
-  { id: 5, title: "UI/UX Design", instructor: "Carol White", totalLessons: 8, image: "", nextLesson: "Design Principles" },
-  { id: 6, title: "Cybersecurity Basics", instructor: "Dave Black", totalLessons: 9, image: "", nextLesson: "Security Fundamentals" },
-  { id: 7, title: "Mobile App Development", instructor: "Eve Green", totalLessons: 11, image: "", nextLesson: "Intro to Apps" },
-  { id: 8, title: "Blockchain Essentials", instructor: "Frank Gray", totalLessons: 7, image: "", nextLesson: "Blockchain Basics" },
-  { id: 9, title: "Digital Marketing Mastery", instructor: "Grace Blue", totalLessons: 13, image: "", nextLesson: "Marketing Fundamentals" },
-  { id: 10, title: "DevOps & CI/CD", instructor: "Hank Silver", totalLessons: 10, image: "", nextLesson: "CI/CD Pipelines" },
-  { id: 11, title: "Game Development with Unity", instructor: "Ivy Gold", totalLessons: 15, image: "", nextLesson: "Unity Basics" },
-  { id: 12, title: "Big Data Analytics", instructor: "Jack Purple", totalLessons: 12, image: "", nextLesson: "Data Processing" },
-  { id: 13, title: "Internet of Things (IoT)", instructor: "Karen Orange", totalLessons: 9, image: "", nextLesson: "IoT Overview" },
-  { id: 14, title: "Ethical Hacking & Pen Testing", instructor: "Leo Cyan", totalLessons: 11, image: "", nextLesson: "Intro to Hacking" },
-  { id: 15, title: "AR/VR Development", instructor: "Mona Pink", totalLessons: 10, image: "", nextLesson: "AR Basics" },
-  { id: 16, title: "SQL & Database Management", instructor: "Nina Lime", totalLessons: 8, image: "", nextLesson: "SQL Queries" },
-  { id: 17, title: "Business Analytics with Excel", instructor: "Oscar Indigo", totalLessons: 7, image: "", nextLesson: "Excel Basics" },
-  { id: 18, title: "Advanced Python Programming", instructor: "Paul Violet", totalLessons: 12, image: "", nextLesson: "Advanced Functions" },
+  { id: 1, title: "Web Development Bootcamp", instructor: "John Doe", totalLessons: 15, image: "", nextLesson: "HTML Basics", isPremium: true, price: 29.99 },
+  { id: 2, title: "Data Science with Python", instructor: "Jane Smith", totalLessons: 12, image: "", nextLesson: "Python Basics", isPremium: true, price: 24.99 },
+  { id: 3, title: "AI & Machine Learning", instructor: "Alice Brown", totalLessons: 14, image: "", nextLesson: "Intro to ML", isPremium: true, price: 34.99 },
+  { id: 4, title: "Cloud Computing Fundamentals", instructor: "Bob Martin", totalLessons: 10, image: "", nextLesson: "Cloud Basics", isPremium: true, price: 19.99 },
+  { id: 5, title: "UI/UX Design", instructor: "Carol White", totalLessons: 8, image: "", nextLesson: "Design Principles", isPremium: false },
+  { id: 6, title: "Cybersecurity Basics", instructor: "Dave Black", totalLessons: 9, image: "", nextLesson: "Security Fundamentals", isPremium: true, price: 29.99 },
+  { id: 7, title: "Mobile App Development", instructor: "Eve Green", totalLessons: 11, image: "", nextLesson: "Intro to Apps", isPremium: false },
+  { id: 8, title: "Blockchain Essentials", instructor: "Frank Gray", totalLessons: 7, image: "", nextLesson: "Blockchain Basics", isPremium: true, price: 24.99 },
+  { id: 9, title: "Digital Marketing Mastery", instructor: "Grace Blue", totalLessons: 13, image: "", nextLesson: "Marketing Fundamentals", isPremium: false },
+  { id: 10, title: "DevOps & CI/CD", instructor: "Hank Silver", totalLessons: 10, image: "", nextLesson: "CI/CD Pipelines", isPremium: true, price: 29.99 },
+  { id: 11, title: "Game Development with Unity", instructor: "Ivy Gold", totalLessons: 15, image: "", nextLesson: "Unity Basics", isPremium: true, price: 34.99 },
+  { id: 12, title: "Big Data Analytics", instructor: "Jack Purple", totalLessons: 12, image: "", nextLesson: "Data Processing", isPremium: false },
+  { id: 13, title: "Internet of Things (IoT)", instructor: "Karen Orange", totalLessons: 9, image: "", nextLesson: "IoT Overview", isPremium: false },
+  { id: 14, title: "Ethical Hacking & Pen Testing", instructor: "Leo Cyan", totalLessons: 11, image: "", nextLesson: "Intro to Hacking", isPremium: true, price: 39.99 },
+  { id: 15, title: "AR/VR Development", instructor: "Mona Pink", totalLessons: 10, image: "", nextLesson: "AR Basics", isPremium: false },
+  { id: 16, title: "SQL & Database Management", instructor: "Nina Lime", totalLessons: 8, image: "", nextLesson: "SQL Queries", isPremium: true, price: 19.99 },
+  { id: 17, title: "Business Analytics with Excel", instructor: "Oscar Indigo", totalLessons: 7, image: "", nextLesson: "Excel Basics", isPremium: false },
+  { id: 18, title: "Advanced Python Programming", instructor: "Paul Violet", totalLessons: 12, image: "", nextLesson: "Advanced Functions", isPremium: true, price: 29.99 },
 ];
