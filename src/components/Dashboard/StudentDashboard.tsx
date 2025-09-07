@@ -1,15 +1,57 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { allCourses, Course } from "./courses";
-import { BookOpen, TrendingUp, Award, Clock, Play, Download, Star, Calendar } from "lucide-react";
+import { allCourses, Course } from "./courses"; // keep imported Course
+import {
+  BookOpen,
+  TrendingUp,
+  Award,
+  Clock,
+  Play,
+  Download,
+  Star,
+  Calendar,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
+
+const embedUrl = (url: string) =>
+  `https://www.youtube.com/embed/${extractYouTubeId(url)}`;
+
+function extractYouTubeId(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : null;
+}
+
+type Deadline = {
+  course: string;
+  task: string;
+  due: string;
+};
+
+// ✅ rename to avoid conflict
+type DashboardCourse = {
+  id: number;
+  title: string;
+  progress: number;
+  instructor?: string;
+  totalLessons?: number;
+  completedLessons?: number;
+  nextLesson?: string;
+  // ✅ playlist
+  playlist: { title: string; url: string; completed: boolean }[];
+};
 
 const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
-  const [lastCompletionDates, setLastCompletionDates] = useState<{ [key: string]: string }>({});
-  
+  const [enrolledCourses, setEnrolledCourses] = useState<DashboardCourse[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<DashboardCourse | null>(
+    null
+  );
+  const [lastCompletionDates, setLastCompletionDates] = useState<{
+    [key: string]: string;
+  }>({});
+
   const [consultations, setConsultations] = useState<any[]>([]);
   const [showConsultForm, setShowConsultForm] = useState(false);
   const [consultFormData, setConsultFormData] = useState({
@@ -17,7 +59,7 @@ const StudentDashboard: React.FC = () => {
     date: "",
     time: "",
     instructor: "",
-    query: ""   
+    query: "",
   });
 
   useEffect(() => {
@@ -36,7 +78,10 @@ const StudentDashboard: React.FC = () => {
   }, [enrolledCourses]);
 
   useEffect(() => {
-    localStorage.setItem("lastCompletionDates", JSON.stringify(lastCompletionDates));
+    localStorage.setItem(
+      "lastCompletionDates",
+      JSON.stringify(lastCompletionDates)
+    );
   }, [lastCompletionDates]);
 
   useEffect(() => {
@@ -47,27 +92,50 @@ const StudentDashboard: React.FC = () => {
     if (!enrolledCourses.some((c) => c.id === course.id)) {
       setEnrolledCourses((prev) => [
         ...prev,
-        { ...course, progress: 0, completedLessons: 0 },
+        {
+          ...course,
+          progress: 0,
+          completedLessons: 0,
+          totalLessons: course.playlist?.length || 0,
+          nextLesson: course.playlist?.[0]?.title || "First lesson",
+          playlist: course.playlist?.map((v) => ({
+            ...v,
+            url: embedUrl(v.url),
+            completed: false,
+          })) || [],
+        },
       ]);
     }
   };
 
-  const updateProgress = (id: number, lessonsCompleted: number) => {
+  const updateProgress = (id: number) => {
     setEnrolledCourses((prev) =>
-      prev.map((course) =>
-        course.id === id
-          ? {
-              ...course,
-              completedLessons: Math.min(lessonsCompleted, course.totalLessons),
-              progress: Math.min(
-                100,
-                Math.round(
-                  (Math.min(lessonsCompleted, course.totalLessons) / course.totalLessons) * 100
-                )
-              ),
-            }
-          : course
-      )
+      prev.map((course) => {
+        if (course.id === id) {
+          const updatedPlaylist = course.playlist.map((video, index) =>
+            index === course.completedLessons
+              ? { ...video, completed: true }
+              : video
+          );
+          const newCompleted = Math.min(
+            (course.completedLessons || 0) + 1,
+            course.totalLessons || 0
+          );
+          return {
+            ...course,
+            playlist: updatedPlaylist,
+            completedLessons: newCompleted,
+            progress:
+              course.totalLessons && course.totalLessons > 0
+                ? Math.round((newCompleted / course.totalLessons) * 100)
+                : 0,
+            nextLesson:
+              updatedPlaylist.find((v) => !v.completed)?.title ||
+              "All lessons completed",
+          };
+        }
+        return course;
+      })
     );
 
     const today = new Date().toISOString().split("T")[0];
@@ -87,7 +155,8 @@ const StudentDashboard: React.FC = () => {
 
     for (let date of dates) {
       date.setHours(0, 0, 0, 0);
-      const diffDays = (current.getTime() - date.getTime()) / (1000 * 3600 * 24);
+      const diffDays =
+        (current.getTime() - date.getTime()) / (1000 * 3600 * 24);
       if (diffDays === 0 || diffDays === 1) {
         streak++;
         current = new Date(date);
@@ -122,7 +191,10 @@ const StudentDashboard: React.FC = () => {
     {
       icon: Clock,
       label: "Hours Learned",
-      value: enrolledCourses.reduce((acc, c) => acc + c.completedLessons, 0),
+      value: enrolledCourses.reduce(
+        (acc, c) => acc + (c.completedLessons || 0),
+        0
+      ),
       color: "from-purple-500 to-purple-600",
     },
   ];
@@ -136,47 +208,71 @@ const StudentDashboard: React.FC = () => {
     }));
 
   const [upcomingDeadlines, setUpcomingDeadlines] = useState([
-    { course: "React Fundamentals", task: "Final Project Submission", due: "in 3 days" },
+    {
+      course: "React Fundamentals",
+      task: "Final Project Submission",
+      due: "in 3 days",
+    },
     { course: "UI/UX Design", task: "Design Challenge", due: "in 1 week" },
   ]);
 
-  const handleConsultChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleConsultChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setConsultFormData({ ...consultFormData, [e.target.name]: e.target.value });
   };
 
-const submitConsultForm = (e: React.FormEvent) => {
-  e.preventDefault();
-  const newConsultation = { ...consultFormData, dateCreated: new Date().toLocaleString() };
-  setConsultations((prev) => [...prev, newConsultation]);
+  const submitConsultForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newConsultation = {
+      ...consultFormData,
+      dateCreated: new Date().toLocaleString(),
+    };
+    setConsultations((prev) => [...prev, newConsultation]);
 
-  // push into Upcoming Deadlines
-  setUpcomingDeadlines((prev) => [
-    ...prev,
-    {
-      course: "Consultation",
-      task: `Consultation on ${consultFormData.topic} with ${consultFormData.instructor}`,
-      due: `${consultFormData.date} at ${consultFormData.time}`,
-    },
-  ]);
+    setUpcomingDeadlines((prev) => [
+      ...prev,
+      {
+        course: "Consultation",
+        task: `Consultation on ${consultFormData.topic} with ${consultFormData.instructor}`,
+        due: `${consultFormData.date} at ${consultFormData.time}`,
+      },
+    ]);
 
-  toast.success("Consultation request submitted successfully!");
-  setConsultFormData({ topic: "", date: "", time: "", instructor: "", query: "" }); // reset form
-  setShowConsultForm(false);
-};
+    toast.success("Consultation request submitted successfully!");
+    setConsultFormData({
+      topic: "",
+      date: "",
+      time: "",
+      instructor: "",
+      query: "",
+    });
+    setShowConsultForm(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back, Student!</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Continue your learning journey</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Welcome back, Student!
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">
+              Continue your learning journey
+            </p>
           </div>
 
           {/* Add Courses */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Add a Course</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Add a Course
+            </h3>
             <div className="flex flex-wrap gap-2">
               {allCourses.map((course) => (
                 <button
@@ -185,7 +281,8 @@ const submitConsultForm = (e: React.FormEvent) => {
                   className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow hover:from-green-600 hover:to-green-700"
                   disabled={enrolledCourses.some((c) => c.id === course.id)}
                 >
-                  {course.title} {enrolledCourses.some((c) => c.id === course.id) && "✓"}
+                  {course.title}{" "}
+                  {enrolledCourses.some((c) => c.id === course.id) && "✓"}
                 </button>
               ))}
             </div>
@@ -203,10 +300,16 @@ const submitConsultForm = (e: React.FormEvent) => {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {stat.label}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stat.value}
+                    </p>
                   </div>
-                  <div className={`p-3 rounded-lg bg-gradient-to-r ${stat.color}`}>
+                  <div
+                    className={`p-3 rounded-lg bg-gradient-to-r ${stat.color}`}
+                  >
                     <stat.icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -214,66 +317,106 @@ const submitConsultForm = (e: React.FormEvent) => {
             ))}
           </div>
 
-          {/* Continue Learning & Right Panel */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Continue Learning</h2>
-              <div className="space-y-6">
-                {enrolledCourses.length === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400">No courses yet. Add a course to start learning!</p>
-                ) : (
-                  enrolledCourses.map((course, index) => (
-                    <motion.div
-                      key={course.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.5 }}
-                      className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+          {/* Continue Learning + Right Panel Section */}
+<div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
+  {/* Continue Learning - 3/4 */}
+  <div className="lg:col-span-3">
+    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+      Continue Learning
+    </h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {enrolledCourses.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-400">
+          No courses yet. Add a course to start learning!
+        </p>
+      ) : (
+        enrolledCourses.map((course, index) => (
+          <motion.div
+            key={course.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            className="w-full bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <div className="flex flex-col gap-4">
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3
+                      className="text-lg font-semibold text-gray-900 dark:text-white cursor-pointer"
+                      onClick={() =>
+                        setSelectedCourse(
+                          selectedCourse?.id === course.id ? null : course
+                        )
+                      }
                     >
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{course.title}</h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">by {course.instructor}</p>
-                            </div>
-                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">{course.progress}% Complete</span>
-                          </div>
+                      {course.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      by {course.instructor}
+                    </p>
+                  </div>
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    {course.progress}% Complete
+                  </span>
+                </div>
 
-                          <div className="mb-3">
-                            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
-                              <span>Progress</span>
-                              <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${course.progress}%` }}
-                              />
-                            </div>
-                          </div>
+                <div className="mb-3">
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <span>Progress</span>
+                    <span>
+                      {course.completedLessons}/{course.totalLessons} lessons
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
+                </div>
 
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Next: {course.nextLesson}</p>
-                            <motion.button
-                              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => updateProgress(course.id, course.completedLessons + 1)}
-                            >
-                              <Play className="h-4 w-4" />
-                              <span>Complete Lesson</span>
-                            </motion.button>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
+                {/* Playlist */}
+                <div className="mt-4 space-y-4">
+                  {course.playlist?.map((video, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 border rounded-lg dark:border-gray-600"
+                    >
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {video.title}
+                      </p>
+                      <iframe
+                        src={video.url || ""}
+                        title={video.title}
+                        className="w-full h-48 rounded mt-2"
+                        allowFullScreen
+                      />
+                      {!video.completed && (
+                        <motion.button
+                          className="mt-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg"
+                          onClick={() => updateProgress(course.id)}
+                        >
+                          Complete Lesson
+                        </motion.button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+          </motion.div>
+        ))
+      )}
+    </div>
+  </div>
 
-            {/* Right Panel */}
+  {/* Right Panel - 1/4 */}
+  <div className="lg:col-span-1">
+    {/* 👉 Place your global Right Panel content here 
+        (e.g., stats, recommendations, announcements, etc.) */}
+        {/* Right Panel Content (achievements, deadlines, quick actions, consultation form) */}
+              {/* Right Panel */}
             <div className="space-y-6">
               {/* Recent Achievements */}
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
@@ -415,11 +558,19 @@ const submitConsultForm = (e: React.FormEvent) => {
                 )}
               </motion.div>
             </div>
+          {/* </div> */}
+        {/* </motion.div> */}
+      {/* </div> */}
+    {/* </div> */}
+  {/* ); */}
+{/* }; */}
+              {/* Keep your code as-is here */}
+            </div>
           </div>
         </motion.div>
       </div>
     </div>
   );
 };
-
+           
 export default StudentDashboard;
