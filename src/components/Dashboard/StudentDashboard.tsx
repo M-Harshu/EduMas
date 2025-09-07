@@ -17,6 +17,7 @@ const StudentDashboard: React.FC = () => {
     date: "",
     time: "",
     instructor: "",
+    query: ""   
   });
 
   useEffect(() => {
@@ -139,22 +140,29 @@ const StudentDashboard: React.FC = () => {
     { course: "UI/UX Design", task: "Design Challenge", due: "in 1 week" },
   ]);
 
-  const handleConsultChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleConsultChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setConsultFormData({ ...consultFormData, [e.target.name]: e.target.value });
   };
 
-  const submitConsultForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newConsult = { ...consultFormData };
-    setConsultations(prev => [...prev, newConsult]);
-    setUpcomingDeadlines(prev => [
-      ...prev,
-      { course: "Consultation", task: newConsult.topic, due: `${newConsult.date} at ${newConsult.time}` },
-    ]);
-    toast.success("Consultation requested successfully!");
-    setConsultFormData({ topic: "", date: "", time: "", instructor: "" });
-    setShowConsultForm(false);
-  };
+const submitConsultForm = (e: React.FormEvent) => {
+  e.preventDefault();
+  const newConsultation = { ...consultFormData, dateCreated: new Date().toLocaleString() };
+  setConsultations((prev) => [...prev, newConsultation]);
+
+  // push into Upcoming Deadlines
+  setUpcomingDeadlines((prev) => [
+    ...prev,
+    {
+      course: "Consultation",
+      task: `Consultation on ${consultFormData.topic} with ${consultFormData.instructor}`,
+      due: `${consultFormData.date} at ${consultFormData.time}`,
+    },
+  ]);
+
+  toast.success("Consultation request submitted successfully!");
+  setConsultFormData({ topic: "", date: "", time: "", instructor: "", query: "" }); // reset form
+  setShowConsultForm(false);
+};
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -376,6 +384,15 @@ const StudentDashboard: React.FC = () => {
                         className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800"
                         required
                       />
+                       <textarea
+  name="query"
+  placeholder="Write your query here..."
+  value={consultFormData.query}
+  onChange={handleConsultChange}
+  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800"
+  rows={3}
+  required
+/>
                       <input
                         type="text"
                         name="instructor"
