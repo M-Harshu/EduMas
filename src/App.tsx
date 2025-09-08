@@ -29,6 +29,7 @@ import About from "./pages/About";
 import Community from "./pages/Community";
 import CreateCourse from "./pages/CreateCourse"; // moved to pages folder, no duplicate
 import StudyMaterial from "./pages/StudyMaterial";
+import PaymentPage from "./pages/PaymentPage";
 
 // ✅ Home page layout
 const Home: React.FC = () => (
@@ -65,6 +66,7 @@ const AppContent: React.FC = () => {
           <Route path="/community" element={<Community />} />
           <Route path="/create-course" element={<CreateCourse />} />
           <Route path="/study-material" element={<StudyMaterial />} />
+            <Route path="/payment" element={<PaymentPage />} />
 
           {/* Fallback → Redirects to home */}
           <Route path="*" element={<Navigate to="/" replace />} />

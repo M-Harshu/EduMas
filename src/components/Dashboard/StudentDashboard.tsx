@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { allCourses, Course } from "./courses"; // keep imported Course
 import { useAuth } from "../../contexts/AuthContext";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../config/firebase";
 import {
   BookOpen,
   TrendingUp,
@@ -15,13 +17,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-
-
 const embedUrl = (url: string) =>
   `https://www.youtube.com/embed/${extractYouTubeId(url)}`;
 
 function extractYouTubeId(url: string) {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp =
+    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 }
@@ -32,7 +33,6 @@ type Deadline = {
   due: string;
 };
 
-// ✅ rename to avoid conflict
 type DashboardCourse = {
   id: number;
   title: string;
@@ -41,7 +41,6 @@ type DashboardCourse = {
   totalLessons?: number;
   completedLessons?: number;
   nextLesson?: string;
-  // ✅ playlist
   playlist: { title: string; url: string; completed: boolean }[];
 };
 
@@ -55,17 +54,23 @@ const StudentDashboard: React.FC = () => {
   const [lastCompletionDates, setLastCompletionDates] = useState<{
     [key: string]: string;
   }>({});
-
   const [consultations, setConsultations] = useState<any[]>([]);
   const [showConsultForm, setShowConsultForm] = useState(false);
   const [consultFormData, setConsultFormData] = useState({
+    studentName: "Anonymous",
     topic: "",
     date: "",
     time: "",
     instructor: "",
     query: "",
   });
+  const [premiumCourse, setPremiumCourse] = useState<Course | null>(null);
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState([
+    { course: "React Fundamentals", task: "Final Project Submission", due: "in 3 days" },
+    { course: "UI/UX Design", task: "Design Challenge", due: "in 1 week" },
+  ]);
 
+  // Load saved data from localStorage
   useEffect(() => {
     const savedCourses = localStorage.getItem("courses");
     if (savedCourses) setEnrolledCourses(JSON.parse(savedCourses));
@@ -89,10 +94,25 @@ const StudentDashboard: React.FC = () => {
   }, [lastCompletionDates]);
 
   useEffect(() => {
+    const handleConsultUpdate = () => {
+      const saved = localStorage.getItem("consultations");
+      if (saved) setConsultations(JSON.parse(saved));
+    };
+    window.addEventListener("consultationUpdated", handleConsultUpdate);
+    return () =>
+      window.removeEventListener("consultationUpdated", handleConsultUpdate);
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem("consultations", JSON.stringify(consultations));
   }, [consultations]);
 
   const addCourse = (course: Course) => {
+    if (course.isPremium) {
+      setPremiumCourse(course);
+      return;
+    }
+
     if (!enrolledCourses.some((c) => c.id === course.id)) {
       setEnrolledCourses((prev) => [
         ...prev,
@@ -102,11 +122,12 @@ const StudentDashboard: React.FC = () => {
           completedLessons: 0,
           totalLessons: course.playlist?.length || 0,
           nextLesson: course.playlist?.[0]?.title || "First lesson",
-          playlist: course.playlist?.map((v) => ({
-            ...v,
-            url: embedUrl(v.url),
-            completed: false,
-          })) || [],
+          playlist:
+            course.playlist?.map((v) => ({
+              ...v,
+              url: embedUrl(v.url),
+              completed: false,
+            })) || [],
         },
       ]);
     }
@@ -211,49 +232,41 @@ const StudentDashboard: React.FC = () => {
       type: "certificate",
     }));
 
-  const [upcomingDeadlines, setUpcomingDeadlines] = useState([
-    {
-      course: "React Fundamentals",
-      task: "Final Project Submission",
-      due: "in 3 days",
-    },
-    { course: "UI/UX Design", task: "Design Challenge", due: "in 1 week" },
-  ]);
-
   const downloadCertificate = async () => {
-  try {
-    const response = await fetch("http://127.0.0.1:5000/generate-certificate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name: "Harshiii" }), // replace with dynamic username if needed
-    });
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:5000/generate-certificate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: "Harshiii" }),
+        }
+      );
 
-    if (!response.ok) throw new Error("Failed to fetch certificate");
+      if (!response.ok) throw new Error("Failed to fetch certificate");
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "certificate.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } catch (error) {
-    console.error(error);
-  }
-};
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "certificate.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-const handleViewCertificates = () => {
-    console.log('Button clicked'); // debug
-  if (currentUser?.certificates && currentUser.certificates.length > 0) {
-    // For now, just log them to check
-    console.log(currentUser.certificates);
-  } else {
-    alert('No certificates found!');
-  }
-};
+  const handleViewCertificates = () => {
+    if (currentUser?.certificates && currentUser.certificates.length > 0) {
+      console.log(currentUser.certificates);
+    } else {
+      alert("No certificates found!");
+    }
+  };
 
   const handleConsultChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -263,23 +276,32 @@ const handleViewCertificates = () => {
 
   const submitConsultForm = (e: React.FormEvent) => {
     e.preventDefault();
+
     const newConsultation = {
       ...consultFormData,
-      dateCreated: new Date().toLocaleString(),
+      studentName: consultFormData.studentName || "Anonymous",
+      dateCreated: new Date().toISOString(),
     };
-    setConsultations((prev) => [...prev, newConsultation]);
+
+    setConsultations((prev) => {
+      const updated = [...prev, newConsultation];
+      localStorage.setItem("consultations", JSON.stringify(updated));
+      const event = new Event("consultationUpdated");
+      window.dispatchEvent(event);
+      return updated;
+    });
 
     setUpcomingDeadlines((prev) => [
       ...prev,
       {
-        course: "Consultation",
-        task: `Consultation on ${consultFormData.topic} with ${consultFormData.instructor}`,
-        due: `${consultFormData.date} at ${consultFormData.time}`,
+        course: consultFormData.topic || "Consultation",
+        task: "Consultation Request",
+        due: consultFormData.date,
       },
     ]);
 
-    toast.success("Consultation request submitted successfully!");
     setConsultFormData({
+      studentName: "Anonymous",
       topic: "",
       date: "",
       time: "",
@@ -287,6 +309,8 @@ const handleViewCertificates = () => {
       query: "",
     });
     setShowConsultForm(false);
+
+    toast.success("Consultation request submitted successfully!");
   };
 
   return (
@@ -327,6 +351,43 @@ const handleViewCertificates = () => {
             </div>
           </div>
 
+          {/* Premium Course Modal */}
+          {premiumCourse && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-96 text-center">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  {premiumCourse.title}
+                </h2>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  This is a premium course. Price:{" "}
+                  <span className="font-semibold">
+                    ₹{premiumCourse.price || 499}
+                  </span>
+                </p>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => {
+                      setPremiumCourse(null);
+                      navigate("/payment");
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Proceed to Pay
+                  </button>
+                  <button
+                    onClick={() => {
+  setPremiumCourse(null);
+  navigate("/payment", { state: { course: premiumCourse } });
+}}
+
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
@@ -346,9 +407,7 @@ const handleViewCertificates = () => {
                       {stat.value}
                     </p>
                   </div>
-                  <div
-                    className={`p-3 rounded-lg bg-gradient-to-r ${stat.color}`}
-                  >
+                  <div className={`p-3 rounded-lg bg-gradient-to-r ${stat.color}`}>
                     <stat.icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -356,11 +415,12 @@ const handleViewCertificates = () => {
             ))}
           </div>
 
-          {/* Continue Learning + Right Panel Section */}
-<div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
-  {/* Continue Learning - 3/4 */}
-  <div className="lg:col-span-3">
-    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+          {/* Main Grid */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Continue Learning */}
+            <div className="lg:col-span-3">
+              {/* ... continue learning cards, playlist, etc. unchanged ... */}
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
       Continue Learning
     </h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -448,16 +508,13 @@ const handleViewCertificates = () => {
         ))
       )}
     </div>
-  </div>
+            </div>
 
-  {/* Right Panel - 1/4 */}
-  <div className="lg:col-span-1">
-    {/* 👉 Place your global Right Panel content here 
-        (e.g., stats, recommendations, announcements, etc.) */}
-        {/* Right Panel Content (achievements, deadlines, quick actions, consultation form) */}
-              {/* Right Panel */}
-            <div className="space-y-6">
-              {/* Recent Achievements */}
+            {/* Right Panel */}
+            <div className="lg:col-span-1">
+              <div className="space-y-6">
+                {/* Achievements, deadlines, quick actions + consultation form */}
+                {/* Recent Achievements */}
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Achievements</h3>
                 <div className="space-y-3">
@@ -598,15 +655,8 @@ const handleViewCertificates = () => {
                     </form>
                   </div>
                 )}
-              </motion.div>
-            </div>
-          {/* </div> */}
-        {/* </motion.div> */}
-      {/* </div> */}
-    {/* </div> */}
-  {/* ); */}
-{/* }; */}
-              {/* Keep your code as-is here */}
+                </motion.div>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -614,5 +664,5 @@ const handleViewCertificates = () => {
     </div>
   );
 };
-           
+
 export default StudentDashboard;

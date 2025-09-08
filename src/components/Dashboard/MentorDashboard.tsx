@@ -1,10 +1,9 @@
 // src/components/Dashboard/MentorDashboard.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore";
 import { db } from "../../config/firebase";
-// import { Button } from "../ui/button";
 import {
   Users,
   BookOpen,
@@ -50,55 +49,84 @@ type EventItem = {
 const MentorDashboard: React.FC = () => {
   const navigate = useNavigate();
 
+  // ----------- STATES -----------
+  const [consultations, setConsultations] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+
+  // ----------- REAL-TIME CONSULTATIONS -----------
+  useEffect(() => {
+    const q = query(
+      collection(db, "consultations"),
+      orderBy("dateCreated", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setConsultations(data);
+
+      // Add new consultation to recent activity
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const newConsult = change.doc.data();
+          const newActivity: Activity = {
+            type: "consultation_added",
+            message: `New consultation: ${newConsult.topic} with ${newConsult.instructor}`,
+            time: "Just now",
+          };
+          setRecentActivity((prev) => [newActivity, ...prev]);
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ----------- COURSES REAL-TIME -----------
+  useEffect(() => {
+    const q = query(
+      collection(db, "courses"),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedCourses = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        title: doc.data().title,
+        students: doc.data().students || 0,
+        rating: doc.data().rating || 0,
+        revenue: doc.data().revenue || "$0",
+        status: doc.data().status || "draft",
+        image: doc.data().image || "https://via.placeholder.com/150",
+      })) as Course[];
+
+      setCourses(fetchedCourses);
+
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const newCourse = change.doc.data();
+          const newActivity: Activity = {
+            type: "course_added",
+            message: `You added a new course: ${newCourse.title}`,
+            time: "Just now",
+          };
+          setRecentActivity((prev) => [newActivity, ...prev]);
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ----------- STATS -----------
   const stats: Stat[] = [
     { icon: Users, label: "Total Students", value: "29", color: "from-blue-500 to-blue-600" },
-    { icon: BookOpen, label: "Courses Created", value: "18", color: "from-green-500 to-green-600" },
+    { icon: BookOpen, label: "Courses Created", value: courses.length.toString(), color: "from-green-500 to-green-600" },
     { icon: TrendingUp, label: "Avg. Rating", value: "4.8", color: "from-yellow-500 to-yellow-600" },
     { icon: DollarSign, label: "Monthly Earnings", value: "$3,240", color: "from-purple-500 to-purple-600" },
   ];
 
-  const [courses, setCourses] = React.useState<Course[]>([]);
-
-React.useEffect(() => {
-  // Filter courses by mentorId
-  const q = query(
-    collection(db, "courses"),
-    where("mentorId", "==", "dummyMentor"), // Replace "dummyMentor" with currentUser.uid if you add auth
-    orderBy("createdAt", "desc")
-  );
-
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const fetchedCourses = snapshot.docs.map((doc) => ({
-      id: doc.id, // Keep as string (Firestore ID)
-      title: doc.data().title,
-      students: doc.data().students || 0,
-      rating: doc.data().rating || 0,
-      revenue: doc.data().revenue || "$0",
-      status: doc.data().status || "draft",
-      image: doc.data().image || "https://via.placeholder.com/150",
-    })) as Course[];
-setCourses(fetchedCourses);
-snapshot.docChanges().forEach((change) => {
-  if (change.type === "added") {
-    const newCourse = change.doc.data();
-    const newActivity: Activity = {
-      type: "course_added",
-      message: `You added a new course: ${newCourse.title}`,
-      time: "Just now",
-    };
-    setRecentActivity((prev) => [newActivity, ...prev]);
-  }
-});
-
-  });
-
-  return () => unsubscribe();
-}, []);
-
-
-
-const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
-
+  // ----------- UPCOMING EVENTS (STATIC FOR NOW) -----------
   const upcomingEvents: EventItem[] = [
     { title: "React Workshop", date: "March 15", time: "2:00 PM", type: "workshop" },
     { title: "1-on-1 Consultation with John", date: "March 16", time: "10:00 AM", type: "consultation" },
@@ -116,21 +144,14 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
               <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your courses and students</p>
             </div>
 
-<motion.div
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  className="ml-4"
->
-  <div
-    onClick={() => navigate("/create-course")}
-    className="cursor-pointer px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700"
-  >
-    Go to Create Course
-  </div>
-</motion.div>
-
-
-
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="ml-4">
+              <div
+                onClick={() => navigate("/create-course")}
+                className="cursor-pointer px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700"
+              >
+                Go to Create Course
+              </div>
+            </motion.div>
           </div>
 
           {/* Stats Grid */}
@@ -157,7 +178,7 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Courses Management */}
+            {/* Courses Section */}
             <div className="lg:col-span-2">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Your Courses</h2>
               <div className="space-y-6">
@@ -204,21 +225,10 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
                           </div>
 
                           <div className="flex space-x-2">
-                            <motion.button
-                              className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              aria-label={`View ${course.title}`}
-                            >
+                            <motion.button className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} aria-label={`View ${course.title}`}>
                               <Eye className="h-4 w-4" />
                             </motion.button>
-
-                            <motion.button
-                              className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              aria-label={`Edit ${course.title}`}
-                            >
+                            <motion.button className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} aria-label={`Edit ${course.title}`}>
                               <Edit className="h-4 w-4" />
                             </motion.button>
                           </div>
@@ -243,17 +253,39 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {event.date} at {event.time}
-                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{event.date} at {event.time}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
 
-              {/* Recent Activity */}
+              {/* Consultation Requests */}
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Consultation Requests</h3>
+                <div className="space-y-3">
+                  {consultations.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No consultation requests yet.</p>
+                  ) : (
+                    consultations.map((consult) => (
+                      <div key={consult.id} className="flex items-center space-x-3">
+                        <div className="p-2 bg-gradient-to-r from-red-400 to-red-500 rounded-lg">
+                          <Calendar className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            Consultation: {consult.topic} with {consult.instructor}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{consult.date} at {consult.time}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Recent Activity */}
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                 <div className="space-y-3">
                   {recentActivity.map((activity, index) => (
@@ -269,29 +301,6 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
                   ))}
                 </div>
               </motion.div>
-
-              {/* Quick Stats */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">This Month</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">New Enrollments</span>
-                    <span className="text-sm font-medium text-green-600">+47</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Course Completions</span>
-                    <span className="text-sm font-medium text-blue-600">23</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Avg. Rating</span>
-                    <span className="text-sm font-medium text-yellow-600">4.8★</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Revenue Growth</span>
-                    <span className="text-sm font-medium text-purple-600">+12%</span>
-                  </div>
-                </div>
-              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -300,4 +309,4 @@ const [recentActivity, setRecentActivity] = React.useState<Activity[]>([]);
   );
 };
 
-export default MentorDashboard; 
+export default MentorDashboard;
