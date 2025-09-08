@@ -100,6 +100,7 @@ const Navbar: React.FC = () => {
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </motion.button>
 
+            {/* Profile Section */}
             {currentUser && (
               <div className="relative">
                 {/* Profile button */}
@@ -109,7 +110,7 @@ const Navbar: React.FC = () => {
                   whileHover={{ scale: 1.05 }}
                 >
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                    <User className="h-5 w-5 text-white" />
                   </div>
                   <span className="hidden md:block text-sm font-medium">{currentUser.name}</span>
                 </motion.button>
@@ -121,7 +122,7 @@ const Navbar: React.FC = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
+                      className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
                     >
                       <div className="py-2">
                         <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">

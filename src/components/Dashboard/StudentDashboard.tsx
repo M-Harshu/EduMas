@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { allCourses, Course } from "./courses"; // keep imported Course
+import { useAuth } from "../../contexts/AuthContext";
 import {
   BookOpen,
   TrendingUp,
@@ -13,6 +14,8 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+
+
 
 const embedUrl = (url: string) =>
   `https://www.youtube.com/embed/${extractYouTubeId(url)}`;
@@ -43,6 +46,7 @@ type DashboardCourse = {
 };
 
 const StudentDashboard: React.FC = () => {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [enrolledCourses, setEnrolledCourses] = useState<DashboardCourse[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<DashboardCourse | null>(
@@ -215,6 +219,41 @@ const StudentDashboard: React.FC = () => {
     },
     { course: "UI/UX Design", task: "Design Challenge", due: "in 1 week" },
   ]);
+
+  const downloadCertificate = async () => {
+  try {
+    const response = await fetch("http://127.0.0.1:5000/generate-certificate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "Harshiii" }), // replace with dynamic username if needed
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch certificate");
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "certificate.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const handleViewCertificates = () => {
+    console.log('Button clicked'); // debug
+  if (currentUser?.certificates && currentUser.certificates.length > 0) {
+    // For now, just log them to check
+    console.log(currentUser.certificates);
+  } else {
+    alert('No certificates found!');
+  }
+};
 
   const handleConsultChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -467,10 +506,13 @@ const StudentDashboard: React.FC = () => {
                     <span>Download Resources</span>
                   </button>
 
-                  <button className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                    <Star className="h-4 w-4" />
-                    <span>View Certificates</span>
-                  </button>
+                <button
+  className="w-full flex items-center space-x-2 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+  onClick={handleViewCertificates}
+>
+  <Star className="h-4 w-4" />
+  <span>View Certificates</span>
+</button>
 
                   <button
                     onClick={() => navigate("/courses")}
