@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { collection, onSnapshot, query, orderBy, where } from "firebase/firestore";
-import { db } from "../../config/firebase";
 import {
   Users,
   BookOpen,
@@ -14,6 +12,7 @@ import {
   Calendar,
   MessageSquare,
   Star,
+  PlusCircle,
 } from "lucide-react";
 
 type Stat = {
@@ -50,73 +49,50 @@ const MentorDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   // ----------- STATES -----------
-  const [consultations, setConsultations] = useState<any[]>([]);
+  const [consultations] = useState<any[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [showWorkshopForm, setShowWorkshopForm] = useState(false);
+  const [workshopData, setWorkshopData] = useState({
+    title: "",
+    date: "",
+    time: "",
+  });
 
-  // ----------- REAL-TIME CONSULTATIONS -----------
-  useEffect(() => {
-    const q = query(
-      collection(db, "consultations"),
-      orderBy("dateCreated", "desc")
-    );
+  const [upcomingEvents, setUpcomingEvents] = useState<EventItem[]>([
+    { title: "React Workshop", date: "March 15", time: "2:00 PM", type: "workshop" },
+    { title: "1-on-1 Consultation with John", date: "March 16", time: "10:00 AM", type: "consultation" },
+    { title: "JavaScript Q&A Session", date: "March 18", time: "4:00 PM", type: "session" },
+  ]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setConsultations(data);
+  // ----------- HANDLE NEW WORKSHOP -----------
+  const handleWorkshopSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-      // Add new consultation to recent activity
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const newConsult = change.doc.data();
-          const newActivity: Activity = {
-            type: "consultation_added",
-            message: `New consultation: ${newConsult.topic} with ${newConsult.instructor}`,
-            time: "Just now",
-          };
-          setRecentActivity((prev) => [newActivity, ...prev]);
-        }
-      });
-    });
+    if (!workshopData.title || !workshopData.date || !workshopData.time) {
+      alert("Please fill all fields");
+      return;
+    }
 
-    return () => unsubscribe();
-  }, []);
+    const newWorkshop: EventItem = {
+      title: workshopData.title,
+      date: workshopData.date,
+      time: workshopData.time,
+      type: "workshop",
+    };
 
-  // ----------- COURSES REAL-TIME -----------
-  useEffect(() => {
-    const q = query(
-      collection(db, "courses"),
-      orderBy("createdAt", "desc")
-    );
+    setUpcomingEvents((prev) => [newWorkshop, ...prev]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedCourses = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        title: doc.data().title,
-        students: doc.data().students || 0,
-        rating: doc.data().rating || 0,
-        revenue: doc.data().revenue || "$0",
-        status: doc.data().status || "draft",
-        image: doc.data().image || "https://via.placeholder.com/150",
-      })) as Course[];
+    const newActivity: Activity = {
+      type: "workshop_added",
+      message: `You created a new workshop: ${workshopData.title}`,
+      time: "Just now",
+    };
+    setRecentActivity((prev) => [newActivity, ...prev]);
 
-      setCourses(fetchedCourses);
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const newCourse = change.doc.data();
-          const newActivity: Activity = {
-            type: "course_added",
-            message: `You added a new course: ${newCourse.title}`,
-            time: "Just now",
-          };
-          setRecentActivity((prev) => [newActivity, ...prev]);
-        }
-      });
-    });
-
-    return () => unsubscribe();
-  }, []);
+    setWorkshopData({ title: "", date: "", time: "" });
+    setShowWorkshopForm(false);
+  };
 
   // ----------- STATS -----------
   const stats: Stat[] = [
@@ -124,13 +100,6 @@ const MentorDashboard: React.FC = () => {
     { icon: BookOpen, label: "Courses Created", value: courses.length.toString(), color: "from-green-500 to-green-600" },
     { icon: TrendingUp, label: "Avg. Rating", value: "4.8", color: "from-yellow-500 to-yellow-600" },
     { icon: DollarSign, label: "Monthly Earnings", value: "$3,240", color: "from-purple-500 to-purple-600" },
-  ];
-
-  // ----------- UPCOMING EVENTS (STATIC FOR NOW) -----------
-  const upcomingEvents: EventItem[] = [
-    { title: "React Workshop", date: "March 15", time: "2:00 PM", type: "workshop" },
-    { title: "1-on-1 Consultation with John", date: "March 16", time: "10:00 AM", type: "consultation" },
-    { title: "JavaScript Q&A Session", date: "March 18", time: "4:00 PM", type: "session" },
   ];
 
   return (
@@ -144,15 +113,75 @@ const MentorDashboard: React.FC = () => {
               <p className="mt-2 text-gray-600 dark:text-gray-400">Manage your courses and students</p>
             </div>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="ml-4">
-              <div
+            <div className="flex space-x-3">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/create-course")}
-                className="cursor-pointer px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700"
               >
                 Go to Create Course
-              </div>
-            </motion.div>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowWorkshopForm(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 flex items-center space-x-2"
+              >
+                <PlusCircle className="h-4 w-4" />
+                <span>New Workshop</span>
+              </motion.button>
+            </div>
           </div>
+
+          {/* Workshop Form Modal */}
+          {showWorkshopForm && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md">
+                <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Create New Workshop</h2>
+                <form onSubmit={handleWorkshopSubmit} className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Workshop Title"
+                    value={workshopData.title}
+                    onChange={(e) => setWorkshopData({ ...workshopData, title: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    required
+                  />
+                  <input
+                    type="date"
+                    value={workshopData.date}
+                    onChange={(e) => setWorkshopData({ ...workshopData, date: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    required
+                  />
+                  <input
+                    type="time"
+                    value={workshopData.time}
+                    onChange={(e) => setWorkshopData({ ...workshopData, time: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    required
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowWorkshopForm(false)}
+                      className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Save Workshop
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -204,7 +233,6 @@ const MentorDashboard: React.FC = () => {
                               </div>
                             </div>
                           </div>
-
                           <div className="flex items-center space-x-2">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -217,18 +245,26 @@ const MentorDashboard: React.FC = () => {
                             </span>
                           </div>
                         </div>
-
                         <div className="flex items-center justify-between mt-4">
                           <div>
                             <p className="text-lg font-semibold text-green-600 dark:text-green-400">{course.revenue}</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
                           </div>
-
                           <div className="flex space-x-2">
-                            <motion.button className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} aria-label={`View ${course.title}`}>
+                            <motion.button
+                              className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              aria-label={`View ${course.title}`}
+                            >
                               <Eye className="h-4 w-4" />
                             </motion.button>
-                            <motion.button className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} aria-label={`Edit ${course.title}`}>
+                            <motion.button
+                              className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors rounded"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              aria-label={`Edit ${course.title}`}
+                            >
                               <Edit className="h-4 w-4" />
                             </motion.button>
                           </div>
@@ -243,7 +279,12 @@ const MentorDashboard: React.FC = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Upcoming Events */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg"
+              >
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upcoming Events</h3>
                 <div className="space-y-3">
                   {upcomingEvents.map((event, index) => (
@@ -253,39 +294,22 @@ const MentorDashboard: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{event.date} at {event.time}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {event.date} at {event.time}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
 
-              {/* Consultation Requests */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1, duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Consultation Requests</h3>
-                <div className="space-y-3">
-                  {consultations.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No consultation requests yet.</p>
-                  ) : (
-                    consultations.map((consult) => (
-                      <div key={consult.id} className="flex items-center space-x-3">
-                        <div className="p-2 bg-gradient-to-r from-red-400 to-red-500 rounded-lg">
-                          <Calendar className="h-4 w-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Consultation: {consult.topic} with {consult.instructor}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{consult.date} at {consult.time}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </motion.div>
-
               {/* Recent Activity */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.5 }} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg"
+              >
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                 <div className="space-y-3">
                   {recentActivity.map((activity, index) => (

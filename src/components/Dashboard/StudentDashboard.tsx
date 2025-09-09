@@ -260,13 +260,14 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  const handleViewCertificates = () => {
-    if (currentUser?.certificates && currentUser.certificates.length > 0) {
-      console.log(currentUser.certificates);
-    } else {
-      alert("No certificates found!");
-    }
-  };
+const handleViewCertificates = () => {
+  window.open(
+    "https://www.canva.com/design/DAGxzwfxhiA/L8_9edp6uTClPdfRAiCeaQ/edit?utm_content=DAGxzwfxhiA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
+    "_blank"
+  );
+};
+
+
 
   const handleConsultChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -570,6 +571,7 @@ const StudentDashboard: React.FC = () => {
   <Star className="h-4 w-4" />
   <span>View Certificates</span>
 </button>
+
 
                   <button
                     onClick={() => navigate("/courses")}
