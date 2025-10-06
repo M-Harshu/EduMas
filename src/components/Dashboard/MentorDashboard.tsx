@@ -1,7 +1,10 @@
 // src/components/Dashboard/MentorDashboard.tsx
 import React, { useState, useEffect } from "react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../../config/firebase"; // adjust path
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";  // ⬅️ add location import
 import {
   Users,
   BookOpen,
@@ -50,7 +53,30 @@ const MentorDashboard: React.FC = () => {
 
   // ----------- STATES -----------
   const [consultations] = useState<any[]>([]);
+  
   const [courses, setCourses] = useState<Course[]>([]);
+
+  const location = useLocation();
+
+  // Load saved courses from localStorage on mount
+  useEffect(() => {
+  const storedCourses = JSON.parse(localStorage.getItem("myCourses") || "[]");
+  if (storedCourses.length > 0) {
+    setCourses(storedCourses);
+  }
+}, []);
+
+
+  // Handle course coming from CreateCourse page
+useEffect(() => {
+  if (location.state && (location.state as any).newCourse) {
+    const { newCourse } = location.state as any;
+    setCourses((prev) => [newCourse, ...prev]);
+    window.history.replaceState({}, document.title); // prevents duplicate insert on refresh
+  }
+}, [location.state]);
+
+
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [showWorkshopForm, setShowWorkshopForm] = useState(false);
   const [workshopData, setWorkshopData] = useState({
@@ -92,6 +118,10 @@ const MentorDashboard: React.FC = () => {
 
     setWorkshopData({ title: "", date: "", time: "" });
     setShowWorkshopForm(false);
+  };
+
+  const handleAddCourse = (course: any) => {
+    setCourses((prev) => [...prev, course]);
   };
 
   // ----------- STATS -----------
@@ -213,7 +243,7 @@ const MentorDashboard: React.FC = () => {
               <div className="space-y-6">
                 {courses.map((course, index) => (
                   <motion.div
-                    key={course.id}
+                    key={course.id || index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1, duration: 0.5 }}

@@ -13,7 +13,7 @@ interface User {
   uid: string;
   email: string;
   name: string;
-  role: 'student' | 'mentor';
+  role: 'student' | 'mentor' | string;
   createdAt?: Date;
   enrolledCourses?: string[];
   completedCourses?: string[];
@@ -94,6 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw error;
     }
   };
+
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

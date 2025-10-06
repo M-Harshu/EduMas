@@ -362,7 +362,7 @@ const handleViewCertificates = () => {
                 <p className="text-gray-700 dark:text-gray-300 mb-4">
                   This is a premium course. Price:{" "}
                   <span className="font-semibold">
-                    ₹{premiumCourse.price || 499}
+                    ${premiumCourse.price || 499}
                   </span>
                 </p>
                 <div className="flex justify-center gap-4">

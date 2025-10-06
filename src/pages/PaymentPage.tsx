@@ -1,17 +1,43 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
+// Example local courses data (replace with backend fetch if needed)
+const COURSES = [
+  { id: "1", title: "React Basics", price: 499 },
+  { id: "2", title: "Advanced JavaScript", price: 699 },
+  { id: "3", title: "Fullstack Development", price: 999 },
+];
 
 const PaymentPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const course = location.state?.course;
 
+  const [course, setCourse] = useState<any>(null);
   const [method, setMethod] = useState<string>("UPI");
 
+  // Get course from state or query param
+  useEffect(() => {
+    const stateCourse = location.state?.course;
+    if (stateCourse) {
+      setCourse(stateCourse);
+      return;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    const courseId = searchParams.get("id");
+    if (courseId) {
+      const found = COURSES.find((c) => c.id === courseId);
+      if (found) setCourse(found);
+    }
+  }, [location]);
+
   const handlePayment = () => {
-    // here you would integrate with Razorpay / Stripe / PayPal API
-    alert(`Processing ${method} payment for ${course?.title || "course"}...`);
-    navigate("/dashboard"); // after payment, go back to dashboard
+    if (!course) return;
+
+    // Navigate to method-specific page instead of showing alert
+    navigate(`/payment/${course.id}/method/${method.toLowerCase()}`, {
+      state: { course },
+    });
   };
 
   return (
@@ -27,7 +53,7 @@ const PaymentPage: React.FC = () => {
               {course.title}
             </p>
             <p className="text-gray-600 dark:text-gray-300">
-              Price: ₹{course.price || 499}
+              Price: ${course.price || 499}
             </p>
           </div>
         ) : (
@@ -41,26 +67,28 @@ const PaymentPage: React.FC = () => {
         </h2>
 
         <div className="space-y-3">
-          {["UPI", "Credit/Debit Card", "Net Banking", "Wallet"].map((option) => (
-            <label
-              key={option}
-              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
-                method === option
-                  ? "border-blue-600 bg-blue-50 dark:bg-blue-900"
-                  : "border-gray-300 dark:border-gray-700"
-              }`}
-            >
-              <span className="text-gray-800 dark:text-gray-200">{option}</span>
-              <input
-                type="radio"
-                name="payment"
-                value={option}
-                checked={method === option}
-                onChange={() => setMethod(option)}
-                className="accent-blue-600"
-              />
-            </label>
-          ))}
+          {["UPI", "Credit/Debit Card", "Net Banking", "Wallet"].map(
+            (option) => (
+              <label
+                key={option}
+                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
+                  method === option
+                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900"
+                    : "border-gray-300 dark:border-gray-700"
+                }`}
+              >
+                <span className="text-gray-800 dark:text-gray-200">{option}</span>
+                <input
+                  type="radio"
+                  name="payment"
+                  value={option}
+                  checked={method === option}
+                  onChange={() => setMethod(option)}
+                  className="accent-blue-600"
+                />
+              </label>
+            )
+          )}
         </div>
 
         <button

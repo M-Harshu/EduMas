@@ -6,8 +6,6 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../config/firebase"; // adjust if needed
 
 const CreateCourse: React.FC = () => {
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
     title: "",
     category: "",
@@ -18,27 +16,45 @@ const CreateCourse: React.FC = () => {
   });
   const [saving, setSaving] = useState(false);
 
+  const navigate = useNavigate();
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
   };
 
+  // 🔑 Single source of truth: Save & Publish
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
       // Save to Firestore
-      await addDoc(collection(db, "courses"), {
+      const newCourse = {
         ...form,
+        students: 0,
+        rating: 0,
+        revenue: "$0",
+        status: "published",
         createdAt: serverTimestamp(),
-        mentorId: "dummyMentor", // can replace with currentUser?.uid if auth added
-      });
+        mentorId: "dummyMentor", // replace with currentUser?.uid if using auth
+      };
 
-      setSaving(false);
-      navigate("/mentor-dashboard");
+const docRef = await addDoc(collection(db, "courses"), newCourse);
+
+// add Firestore id into course
+const savedCourse = { id: docRef.id, ...newCourse };
+
+// ✅ also keep it in localStorage so dashboard sees it instantly
+const existing = JSON.parse(localStorage.getItem("myCourses") || "[]");
+localStorage.setItem("myCourses", JSON.stringify([savedCourse, ...existing]));
+
+setSaving(false);
+navigate("/mentor-dashboard", { state: { newCourse: savedCourse } });
     } catch (err) {
       setSaving(false);
       console.error("Error creating course:", err);
@@ -53,8 +69,12 @@ const CreateCourse: React.FC = () => {
             <BookOpen className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create a Course</h1>
-            <p className="text-gray-600 dark:text-gray-400">Fill in the details below to publish your course.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Create a Course
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Fill in the details below to publish your course.
+            </p>
           </div>
         </div>
 
