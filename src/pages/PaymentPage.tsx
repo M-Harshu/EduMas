@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-// Example local courses data (replace with backend fetch if needed)
 const COURSES = [
   { id: "1", title: "React Basics", price: 499 },
   { id: "2", title: "Advanced JavaScript", price: 699 },
   { id: "3", title: "Fullstack Development", price: 999 },
 ];
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const PaymentPage: React.FC = () => {
   const location = useLocation();
@@ -14,8 +19,8 @@ const PaymentPage: React.FC = () => {
 
   const [course, setCourse] = useState<any>(null);
   const [method, setMethod] = useState<string>("UPI");
+  const [showUPI, setShowUPI] = useState<boolean>(false);
 
-  // Get course from state or query param
   useEffect(() => {
     const stateCourse = location.state?.course;
     if (stateCourse) {
@@ -31,14 +36,76 @@ const PaymentPage: React.FC = () => {
     }
   }, [location]);
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!course) return;
 
-    // Navigate to method-specific page instead of showing alert
-    navigate(`/payment/${course.id}/method/${method.toLowerCase()}`, {
-      state: { course },
-    });
+    if (method === "UPI") {
+      setShowUPI(true);
+    } else {
+      // Create Razorpay order via Flask backend
+      try {
+        const res = await fetch("http://localhost:5000/api/create_order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: course.price * 100, currency: "INR" }), // amount in paise
+        });
+        const data = await res.json();
+
+        const options = {
+          key: data.key,
+          amount: course.price * 100,
+          currency: "INR",
+          name: "Edumas Course",
+          description: course.title,
+          order_id: data.orderId,
+          handler: async function (response: any) {
+            // Verify payment with backend
+            const verifyRes = await fetch(
+              "http://localhost:5000/api/verify_payment",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(response),
+              }
+            );
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              // Save course to localStorage
+              const courses = JSON.parse(
+                localStorage.getItem("studentCourses") || "[]"
+              );
+              const exists = courses.find((c: any) => c.id === course.id);
+              if (!exists) courses.push(course);
+              localStorage.setItem("studentCourses", JSON.stringify(courses));
+              navigate("/student-dashboard");
+            } else {
+              alert("Payment verification failed");
+            }
+          },
+          prefill: {
+            name: "Student Name",
+            email: "student@example.com",
+          },
+          theme: { color: "#3399cc" },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        console.error(err);
+        alert("Razorpay order creation failed");
+      }
+    }
   };
+
+  const handleUPIPaymentConfirm = () => {
+const courses = JSON.parse(localStorage.getItem("courses") || "[]");
+const exists = courses.find((c: any) => c.id === course.id);
+if (!exists) courses.push(course);
+localStorage.setItem("courses", JSON.stringify(courses));
+navigate("/student-dashboard");
+};
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
@@ -53,7 +120,7 @@ const PaymentPage: React.FC = () => {
               {course.title}
             </p>
             <p className="text-gray-600 dark:text-gray-300">
-              Price: ${course.price || 499}
+              Price: ₹{course.price || 499}
             </p>
           </div>
         ) : (
@@ -62,41 +129,66 @@ const PaymentPage: React.FC = () => {
           </p>
         )}
 
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
-          Choose Payment Method
-        </h2>
+        {!showUPI && (
+          <>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              Choose Payment Method
+            </h2>
 
-        <div className="space-y-3">
-          {["UPI", "Credit/Debit Card", "Net Banking", "Wallet"].map(
-            (option) => (
-              <label
-                key={option}
-                className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
-                  method === option
-                    ? "border-blue-600 bg-blue-50 dark:bg-blue-900"
-                    : "border-gray-300 dark:border-gray-700"
-                }`}
-              >
-                <span className="text-gray-800 dark:text-gray-200">{option}</span>
-                <input
-                  type="radio"
-                  name="payment"
-                  value={option}
-                  checked={method === option}
-                  onChange={() => setMethod(option)}
-                  className="accent-blue-600"
-                />
-              </label>
-            )
-          )}
-        </div>
+            <div className="space-y-3">
+              {["UPI", "Credit/Debit Card", "Net Banking", "Wallet"].map(
+                (option) => (
+                  <label
+                    key={option}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
+                      method === option
+                        ? "border-blue-600 bg-blue-50 dark:bg-blue-900"
+                        : "border-gray-300 dark:border-gray-700"
+                    }`}
+                  >
+                    <span className="text-gray-800 dark:text-gray-200">
+                      {option}
+                    </span>
+                    <input
+                      type="radio"
+                      name="payment"
+                      value={option}
+                      checked={method === option}
+                      onChange={() => setMethod(option)}
+                      className="accent-blue-600"
+                    />
+                  </label>
+                )
+              )}
+            </div>
 
-        <button
-          onClick={handlePayment}
-          className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
-        >
-          Pay Now
-        </button>
+            <button
+              onClick={handlePayment}
+              className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+            >
+              Pay Now
+            </button>
+          </>
+        )}
+
+        {showUPI && (
+          <div className="text-center mt-6">
+            <img
+              src="/my-upi-qr.png"
+              alt="UPI QR Code"
+              className="w-40 mx-auto mb-4"
+            />
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              Scan this QR code using your UPI app and pay ₹{course.price || 499}
+            </p>
+            <button
+              onClick={handleUPIPaymentConfirm}
+              className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
+            >
+              Payment Done
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -41,20 +41,25 @@ const CreateCourse: React.FC = () => {
         revenue: "$0",
         status: "published",
         createdAt: serverTimestamp(),
-        mentorId: "dummyMentor", // replace with currentUser?.uid if using auth
+        mentorId: "dummyMentor", // ✅ Replace with currentUser?.uid when using auth
       };
 
-const docRef = await addDoc(collection(db, "courses"), newCourse);
+      const docRef = await addDoc(collection(db, "courses"), newCourse);
 
-// add Firestore id into course
-const savedCourse = { id: docRef.id, ...newCourse };
+      // add Firestore id into course
+      const savedCourse = { id: docRef.id, ...newCourse };
 
-// ✅ also keep it in localStorage so dashboard sees it instantly
-const existing = JSON.parse(localStorage.getItem("myCourses") || "[]");
-localStorage.setItem("myCourses", JSON.stringify([savedCourse, ...existing]));
+      // ✅ also keep it in localStorage so dashboard sees it instantly
+      const existing = JSON.parse(localStorage.getItem("myCourses") || "[]");
+      localStorage.setItem(
+        "myCourses",
+        JSON.stringify([savedCourse, ...existing])
+      );
 
-setSaving(false);
-navigate("/mentor-dashboard", { state: { newCourse: savedCourse } });
+      setSaving(false);
+
+      // ✅ Navigate and pass newCourse for instant dashboard update
+      navigate("/mentor-dashboard", { state: { newCourse: savedCourse } });
     } catch (err) {
       setSaving(false);
       console.error("Error creating course:", err);
