@@ -2,39 +2,51 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "./contexts/ThemeContext";
-// import StudyMaterial from "./pages/StudyMaterial";
+import ScrollToTop from "./components/Layout/ScrollToTop";
 
-// Layout Components
+
+// Layout
 import Navbar from "./components/Layout/Navbar";
 import Footer from "./components/Layout/Footer";
 
-// Auth Components
+// Auth
 import Login from "./components/Auth/Login";
 import Signup from "./components/Auth/Signup";
 
-// Dashboard Components
+// Dashboards
 import StudentDashboard from "./components/Dashboard/StudentDashboard";
 import MentorDashboard from "./components/Dashboard/MentorDashboard";
 import StudentWorkshop from "./components/Dashboard/StudentWorkshop";
 
-// Home Components
+// Home
 import Hero from "./components/Home/Hero";
 import FeaturedCourses from "./components/Home/FeaturedCourses";
 import Features from "./components/Home/Features";
 
-// Page Components
+// Pages
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import About from "./pages/About";
 import Community from "./pages/Community";
-import CreateCourse from "./pages/CreateCourse"; // moved to pages folder, no duplicate
+import CreateCourse from "./pages/CreateCourse";
 import StudyMaterial from "./pages/StudyMaterial";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentMethodPage from "./pages/PaymentMethodPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 
-// ✅ Home page layout
+// Info Pages
+import Terms from "./pages/Terms";
+import Cookies from "./pages/Cookies";
+import Blog from "./pages/Blog";
+import Press from "./pages/Press";
+import MentorResources from "./pages/MentorResources";
+import TeachingGuidelines from "./pages/TeachingGuidelines";
+import Help from "./pages/Help";
+import FAQ from "./pages/FAQ";
+
+
+// Home Layout
 const Home: React.FC = () => (
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
     <Hero />
@@ -70,18 +82,30 @@ const AppContent: React.FC = () => {
           <Route path="/create-course" element={<CreateCourse />} />
           <Route path="/study-material" element={<StudyMaterial />} />
           <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/payment/:courseId/method/:method" element={<PaymentMethodPage/>} />
-          <Route path="/payment/success" element={<PaymentSuccess/>} />
-          <Route path="/payment/failure" element={<PaymentFailure/>} />
+          <Route path="/payment/:courseId/method/:method" element={<PaymentMethodPage />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
 
-          {/* Fallback → Redirects to home */}
+          {/* Info Pages */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/press" element={<Press />} />
+          <Route path="/mentor-resources" element={<MentorResources />} />
+<Route path="/teaching-guidelines" element={<TeachingGuidelines />} />
+<Route path="/help" element={<Help />} />
+<Route path="/faq" element={<FAQ />} />
+
+
+
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
 
       <Footer />
 
-      {/* Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -100,6 +124,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
+          <ScrollToTop />
         <AppContent />
       </Router>
     </ThemeProvider>

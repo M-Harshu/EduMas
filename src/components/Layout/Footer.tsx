@@ -6,12 +6,9 @@ const Footer: React.FC = () => {
   const footerLinks = {
     'Learn': [
       { name: 'Browse Courses', path: '/courses' },
-      { name: 'Free Courses', path: '/courses?free=true' },
-      { name: 'Premium Courses', path: '/courses?premium=true' },
-      { name: 'Workshops', path: '/workshops' }
     ],
     'Teach': [
-      { name: 'Become a Mentor', path: '/become-mentor' },
+      { name: 'Become a Mentor', path: '/signup' },
       { name: 'Mentor Resources', path: '/mentor-resources' },
       { name: 'Teaching Guidelines', path: '/teaching-guidelines' },
       { name: 'Earnings', path: '/earnings' }
@@ -24,21 +21,21 @@ const Footer: React.FC = () => {
     ],
     'Company': [
       { name: 'About Us', path: '/about' },
-      { name: 'Careers', path: '/careers' },
+      { name: 'Career', path: '/career' },
       { name: 'Blog', path: '/blog' },
       { name: 'Press', path: '/press' }
     ]
   };
 
   const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Twitter, href: '#', label: 'Twitter' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' }
+    { icon: Facebook, href: 'https://www.facebook.com/', label: 'Facebook' },
+    { icon: Twitter, href: 'https://x.com/', label: 'Twitter' },
+    { icon: Instagram, href: 'http://instagram.com/', label: 'Instagram' },
+    { icon: Linkedin, href: 'https://in.linkedin.com/', label: 'LinkedIn' }
   ];
 
   return (
-    <footer className="bg-gray-900 dark:bg-black">
+    <footer className="bg-gray-900 dark:bg-black text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Brand */}
@@ -47,19 +44,18 @@ const Footer: React.FC = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <BookOpen className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">
-                EduPlatform
-              </span>
+              <span className="text-xl font-bold text-white">EduPlatform</span>
             </Link>
-            <p className="text-gray-400 mb-6 max-w-md">
-              Empowering learners worldwide with expert-led courses, 
-              interactive learning experiences, and recognized certifications.
+            <p className="mb-6 max-w-md">
+              Empowering learners worldwide with expert-led courses, interactive learning experiences, and recognized certifications.
             </p>
             <div className="flex space-x-4">
               {socialLinks.map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
                   href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-400 hover:text-white transition-colors"
                   aria-label={label}
                 >
@@ -69,7 +65,7 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Links */}
+          {/* Footer Links */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
               <h3 className="text-white font-semibold mb-4">{category}</h3>
@@ -78,7 +74,7 @@ const Footer: React.FC = () => {
                   <li key={name}>
                     <Link
                       to={path}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="hover:text-white transition-colors"
                     >
                       {name}
                     </Link>
@@ -91,19 +87,11 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 mb-4 md:mb-0">
-              © 2024 EduPlatform. All rights reserved.
-            </p>
+            <p className="mb-4 md:mb-0">© 2025 EduPlatform. All rights reserved.</p>
             <div className="flex space-x-6">
-              <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
-                Terms of Service
-              </Link>
-              <Link to="/cookies" className="text-gray-400 hover:text-white transition-colors">
-                Cookie Policy
-              </Link>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+              <Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
             </div>
           </div>
         </div>
