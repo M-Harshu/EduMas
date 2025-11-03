@@ -133,6 +133,36 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+  const savedState = (window.history.state && window.history.state.usr) || {};
+  const paidCourse = savedState?.paidCourse;
+
+  if (paidCourse) {
+    if (!enrolledCourses.some((c) => c.id === paidCourse.id)) {
+      setEnrolledCourses((prev) => [
+        ...prev,
+        {
+          ...paidCourse,
+          progress: 0,
+          completedLessons: 0,
+          totalLessons: paidCourse.playlist?.length || 0,
+          nextLesson: paidCourse.playlist?.[0]?.title || "First lesson",
+          playlist:
+            paidCourse.playlist?.map((v: { title: string; url: string }) => ({
+              ...v,
+              url: embedUrl(v.url),
+              completed: false,
+            })) || [],
+        },
+      ]);
+    }
+
+    // ✅ Clear the state so it doesn’t add again
+    window.history.replaceState({}, document.title);
+  }
+}, [enrolledCourses]);
+
+
   const updateProgress = (id: number) => {
     setEnrolledCourses((prev) =>
       prev.map((course) => {

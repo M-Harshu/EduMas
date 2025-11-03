@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const COURSES = [
-  { id: "1", title: "React Basics", price: 499 },
-  { id: "2", title: "Advanced JavaScript", price: 699 },
-  { id: "3", title: "Fullstack Development", price: 999 },
+  { id: "1", title: "React Basics", price: 24.0 },
+  { id: "2", title: "Advanced JavaScript", price: 34.0 },
+  { id: "3", title: "Fullstack Development", price: 50.0 },
 ];
 
 declare global {
@@ -70,17 +70,19 @@ const PaymentPage: React.FC = () => {
             );
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
-              // Save course to localStorage
-              const courses = JSON.parse(
-                localStorage.getItem("studentCourses") || "[]"
-              );
-              const exists = courses.find((c: any) => c.id === course.id);
-              if (!exists) courses.push(course);
-              localStorage.setItem("studentCourses", JSON.stringify(courses));
-              navigate("/student-dashboard");
-            } else {
-              alert("Payment verification failed");
-            }
+  // Save course to localStorage (optional fallback)
+  const courses = JSON.parse(localStorage.getItem("courses") || "[]");
+  if (!courses.find((c: any) => c.id === course.id)) {
+    courses.push(course);
+    localStorage.setItem("courses", JSON.stringify(courses));
+  }
+
+  // ✅ Pass paid course to dashboard
+  navigate("/student-dashboard", { state: { paidCourse: course } });
+} else {
+  alert("Payment verification failed");
+}
+
           },
           prefill: {
             name: "Student Name",
@@ -99,12 +101,15 @@ const PaymentPage: React.FC = () => {
   };
 
   const handleUPIPaymentConfirm = () => {
-const courses = JSON.parse(localStorage.getItem("courses") || "[]");
-const exists = courses.find((c: any) => c.id === course.id);
-if (!exists) courses.push(course);
-localStorage.setItem("courses", JSON.stringify(courses));
-navigate("/student-dashboard");
-};
+const courses = JSON.parse(localStorage.getItem("studentCourses") || "[]");
+if (!courses.find((c: any) => c.id === course.id)) {
+  courses.push(course);
+  localStorage.setItem("courses", JSON.stringify(courses))
+}
+
+// ✅ Pass paid course to dashboard
+navigate("/student-dashboard", { state: { paidCourse: course } });
+  };
 
 
   return (
@@ -120,8 +125,8 @@ navigate("/student-dashboard");
               {course.title}
             </p>
             <p className="text-gray-600 dark:text-gray-300">
-              Price: ₹{course.price || 499}
-            </p>
+  Price: ${course.price?.toFixed(2) || "24.00"}
+</p>
           </div>
         ) : (
           <p className="text-gray-500 dark:text-gray-400 text-center">

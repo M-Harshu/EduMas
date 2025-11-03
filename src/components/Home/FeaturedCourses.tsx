@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Star, Users, Clock, Play, BookOpen } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // ← add this at the top
+import { useNavigate } from 'react-router-dom'; // ← already there
 
 const FeaturedCourses: React.FC = () => {
   const navigate = useNavigate();
+
   const courses = [
     {
       id: 1,
@@ -108,6 +109,15 @@ const FeaturedCourses: React.FC = () => {
       opacity: 1,
       y: 0,
       transition: { duration: 0.5 }
+    }
+  };
+
+  // ✅ Added this function only
+  const handleEnroll = (course: any) => {
+    if (course.isPremium) {
+      navigate(`/payment/${course.id}`, { state: { course } });
+    } else {
+      navigate("/student-dashboard", { state: { course } });
     }
   };
 
@@ -217,6 +227,7 @@ const FeaturedCourses: React.FC = () => {
                     )}
                   </div>
                   <motion.button
+                    onClick={() => handleEnroll(course)} // ✅ added this
                     className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -236,12 +247,12 @@ const FeaturedCourses: React.FC = () => {
           transition={{ delay: 0.8, duration: 0.6 }}
           className="text-center mt-12"
         >
-         <button
-    onClick={() => navigate("/courses")} // ← updated this line
-    className="px-8 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-  >
-    View All Courses
-  </button>
+          <button
+            onClick={() => navigate("/courses")}
+            className="px-8 py-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+          >
+            View All Courses
+          </button>
         </motion.div>
       </div>
     </section>

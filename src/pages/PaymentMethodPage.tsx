@@ -131,8 +131,9 @@ export default function PaymentMethodPage() {
       </h2>
 
       <p className="text-lg mb-6 font-medium text-center text-gray-700">
-        Amount: ₹{amountINR}
-      </p>
+  Amount: {course.amountUSD ? `$${course.amountUSD}` : `₹${amountINR}`}
+</p>
+
 
       {/* ✅ Show QR if UPI selected */}
       {method === "upi" && (
@@ -146,6 +147,12 @@ export default function PaymentMethodPage() {
             alt="UPI QR Code"
             className="mx-auto my-4 w-48 h-48 object-contain rounded-lg border-2 border-gray-300 shadow-sm"
           />
+
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
+  Scan this QR code using your UPI app and pay{" "}
+  {course.amountUSD ? `$${course.amountUSD}` : `₹${amountINR}`}
+</p>
+
 
           <p className="text-sm text-gray-500 mt-2">
             After completing the payment in your UPI app, click “Pay” to confirm
@@ -170,7 +177,11 @@ export default function PaymentMethodPage() {
             loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
           }`}
         >
-          {loading ? "Processing..." : `Pay ₹${amountINR}`}
+          {loading
+  ? "Processing..."
+  : course.amountUSD
+  ? `Pay $${course.amountUSD}`
+  : `Pay ₹${amountINR}`}
         </button>
         <button
           onClick={() => navigate(`/payment/${course.id}`)}
