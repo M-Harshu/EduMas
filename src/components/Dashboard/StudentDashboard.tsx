@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { allCourses, Course } from "./courses"; // keep imported Course
@@ -133,9 +134,11 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-  const savedState = (window.history.state && window.history.state.usr) || {};
-  const paidCourse = savedState?.paidCourse;
+  // ⬆️ put this near the other hooks
+const location = useLocation();
+
+useEffect(() => {
+  const paidCourse = location.state?.paidCourse;
 
   if (paidCourse) {
     if (!enrolledCourses.some((c) => c.id === paidCourse.id)) {
@@ -160,7 +163,7 @@ const StudentDashboard: React.FC = () => {
     // ✅ Clear the state so it doesn’t add again
     window.history.replaceState({}, document.title);
   }
-}, [enrolledCourses]);
+}, [enrolledCourses, location]);
 
 
   const updateProgress = (id: number) => {

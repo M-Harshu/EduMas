@@ -101,7 +101,7 @@ const PaymentPage: React.FC = () => {
   };
 
   const handleUPIPaymentConfirm = () => {
-const courses = JSON.parse(localStorage.getItem("studentCourses") || "[]");
+const courses = JSON.parse(localStorage.getItem("courses") || "[]");
 if (!courses.find((c: any) => c.id === course.id)) {
   courses.push(course);
   localStorage.setItem("courses", JSON.stringify(courses))
