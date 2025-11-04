@@ -262,39 +262,31 @@ const StudentDashboard: React.FC = () => {
       type: "certificate",
     }));
 
-  const downloadCertificate = async () => {
-    try {
-      const response = await fetch(
-        "http://127.0.0.1:5000/generate-certificate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: "Harshiii" }),
-        }
-      );
+const downloadCertificate = async () => {
+  try {
+    const filePath =
+      "C:/Users/jyoth/Downloads/project-bolt-sb1-hpq5vsbq/project/public/certificate.pdf";
+    const response = await fetch(filePath);
 
-      if (!response.ok) throw new Error("Failed to fetch certificate");
+    if (!response.ok) throw new Error("Failed to fetch certificate");
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "certificate.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "certificate.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
 const handleViewCertificates = () => {
-  window.open(
-    "https://www.canva.com/design/DAGxzwfxhiA/L8_9edp6uTClPdfRAiCeaQ/edit?utm_content=DAGxzwfxhiA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
-    "_blank"
-  );
+  const filePath = "/certificate.pdf"; // File must be inside `public/` folder in your project
+  window.open(filePath, "_blank");
 };
 
 
@@ -396,25 +388,23 @@ const handleViewCertificates = () => {
                   </span>
                 </p>
                 <div className="flex justify-center gap-4">
-                  <button
-                    onClick={() => {
-                      setPremiumCourse(null);
-                      navigate("/payment");
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Proceed to Pay
-                  </button>
-                  <button
-                    onClick={() => {
-  setPremiumCourse(null);
-  navigate("/payment", { state: { course: premiumCourse } });
-}}
-
-                  >
-                    Cancel
-                  </button>
-                </div>
+  <button
+    onClick={() => {
+      navigate("/payment", { state: { course: premiumCourse } });
+      setPremiumCourse(null);
+    }}
+    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+  >
+    Proceed to Pay
+  </button>
+  
+  <button
+    onClick={() => setPremiumCourse(null)}
+    className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
+  >
+    Cancel
+  </button>
+</div>
               </div>
             </div>
           )}
